@@ -1,4 +1,4 @@
-from enum import Enum
+import random
 class World:
     def __init__(self, width, height):
         # 2D arrar
@@ -33,12 +33,16 @@ class World:
             else:
                     print(self.map[x][y])
 
-    def spawn(self, thing, x, y):
-        if not inbound(self, x, y):
-            coordinates = normalize(self, x, y)
+    def spawn(self, thing):
+        print(thing.x, thing.y)
+        if not inbound(self, thing.x, thing.y):
+            coordinates = normalize(self, thing.x, thing.y)
             #print(f"x,y oob: {x} {y}")
             x = coordinates[0]
-            y = coordinates[1]       
+            y = coordinates[1]
+        else:
+            x = thing.x 
+            y = thing.y 
         self.map[x][y] = thing.symbol
         self.things[ctod(x, y)] = thing
 
@@ -62,7 +66,25 @@ class World:
            # print(f"from neigbour { normalize(self, x, y)}")
            # print(f"{x}, {y}")
            # print(f"neighbour out { normalize(self, x, y)}")
-            return normalize(self, x, y)        
+            return normalize(self, x, y)    
+    
+    def computeLifeCycle(self):
+        things = self.things
+        while(len(self.things) > 0):
+            rand_x = random.randint(0, self.max_x) # If i actually implement this i have to fix this
+            rand_y = random.randint(0, self.max_y) # Holy shit this would be such bad runtime
+            coords = ctod(rand_x, rand_y) # fuck it mach ich später
+            try:
+                if things[coords] != None:
+                    things[coords].call()
+                things.pop(coords)
+            except KeyError:
+                pass
+
+
+
+def TryDieGeliebteImBeischlafVerführen(thing, x, y):
+    pass
 
 def ctod(x, y):
     return "{},{}".format(x, y)
@@ -115,32 +137,47 @@ def inbound(map, x,y):
     return True
 
 class Thing:
-    def __init__(self, symbol):
+    def __init__(self, symbol, x, y):
         self.symbol = symbol
         self.age = 0
+        self.x = x 
+        self.y = y
     def performAction():
         pass
 
 class Creature(Thing):
-    def __init__(self, symbol, offspringCycle, maxStarving, maxAge):
+    def __init__(self, symbol, offspringCycle, maxStarving, maxAge, x, y):
         super().__init__(
-            symbol = symbol
+            symbol = symbol,
+            x = x,
+            y = y,
         )
         self.offspringCycle = offspringCycle
-        self.starving = False
+        self.starving = 0
         self.maxStarving = maxStarving
         self.maxAge = maxAge
-
+        self.currentCycle = 0
+    def call(self):
+        self.offspringCycle += 1
+        self.age += 1
+        self.starving += 1
+        self.currentCycle += 1
+        if self.starving == self.maxStarving:
+            self.age = self.maxAge # This should kill it
+        if self.age == self.maxAge:
+            pass # Figure something out to kill and remove it
+        if self.offspringCycle == self.currentCycle:
+            TryDieGeliebteImBeischlafVerführen(self)
+          
 class Plant(Thing):
     def __init__(symbol, seedCycle):
         super().__init__(
             symbol = symbol
         )
-        self.seedCycle = seedCycle
+        self.seedCycle = seedCycly
 
 
-map = World(79, 29)
-mouse = Creature("M", 3, 12, 144)
-map.spawn(mouse, 14, 13)
-print(map.max_y, map.max_x)
-map.out()
+map = World(20, 20)
+mouse = Creature("M", 3, 12, 144, 10, 10)
+map.spawn(mouse)
+map.computeLifeCycle()
