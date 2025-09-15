@@ -1,6 +1,8 @@
 offspringCycle = 4
 maxStarving = 3
-maxStarving = 10 
+maxStarving = 10
+mouse = 'M'
+corn = 'C'
 import random
 class World:
     def __init__(self, width, height):
@@ -73,23 +75,21 @@ class World:
         
                 if self.map[ctod(x, y)] == None: # If this throws an error fix inbound or normalize
                     return[x, y]
-                
             return[]    
             
-            
+    def kill(self, thing): #TODO: Kill the children of Thing
+        x = thing.x 
+        y = thing.y 
+        self.map[x][y] = None
+        self.things[ctod(x, y)] = None
+
     
     def computeLifeCycle(self):
-        things = self.things
-        while(len(self.things) > 0): # TODO: s.u.
-            rand_x = random.randint(0, self.max_x) # If i actually implement this i have to fix this
-            rand_y = random.randint(0, self.max_y) # Holy shit this would be such bad runtime
-            coords = ctod(rand_x, rand_y) # fuck it mach ich später
-            try:
-                if things[coords] != None:
-                    things[coords].call()
-                things.pop(coords)
-            except KeyError:
-                pass
+        things = self.things.values()
+        random.shuffle(list(things))
+        for v in things:
+            if v != None:
+                v.call()
 
 
 
@@ -97,7 +97,11 @@ def TryDieGeliebteImBeischlafVerführen(thing, x, y):
     #TODO: Find a free neighbour, randomly
     #TODO: Spawn a rat at the returned postion
     # Wie reproduzieren die sich eigentlich asexuell
-    pass
+    
+    if len(neighbour(map, thing)) > 0: # Map hier vlt. in die Funktion einfügen, aber runtime ist eh schon aus dem Fenster geflogen
+        map.spawn(Creature(mouse, offspringCycle, maxStarving, maxAge, x, y))
+
+
     
     
 
@@ -180,7 +184,7 @@ class Creature(Thing):
         if self.starving == self.maxStarving:
             self.age = self.maxAge # This should kill it
         if self.age == self.maxAge:
-            pass # Figure something out to kill and remove it
+            map.kill(self)
         if self.offspringCycle == self.currentCycle:
             TryDieGeliebteImBeischlafVerführen(self)
           
@@ -190,9 +194,27 @@ class Plant(Thing):
             symbol = symbol
         )
         self.seedCycle = seedCycle
+    def call(self):
+        self.seedCycle += 1
+
+map = World(79, 29)
+def mainLoop(map):
+    map.out()
+    while True:
+        command = input("Enter command: ")
+        if len(command) == 0:
+            break
+        elif len(command) == 1:
+            match command:
+                case "h":
+                    print("Lorem ipsum in dolor sit amet")
+                    break
+                case "q":
+                    exit()
+        elif len(command) > 5:
+            if command[:5] == "spawn":
+                pass #TODO: Create random coordinate generator, match pattern for spawn <type> <number>
 
 
-map = World(20, 20)
-mouse = Creature("M", 3, 12, 144, 10, 10)
-map.spawn(mouse)
-map.computeLifeCycle()
+
+
