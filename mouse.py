@@ -1,3 +1,6 @@
+offspringCycle = 4
+maxStarving = 3
+maxStarving = 10 
 import random
 class World:
     def __init__(self, width, height):
@@ -47,30 +50,37 @@ class World:
         self.things[ctod(x, y)] = thing
 
                 
-    def neighbour(self, x, y, direction):
-        match direction:
-            case "N":
-                y += 1
-            case "S":
-                y -= 1
-            case "E":
-                x += 1
-            case "W":
-                x -= 1
-            case _:
-                print("Somthings ducked")
-        if inbound(self, x, y):
-          # print(f"neighbour in {x} {y}")
-            return [x, y]
-        else:
-           # print(f"from neigbour { normalize(self, x, y)}")
-           # print(f"{x}, {y}")
-           # print(f"neighbour out { normalize(self, x, y)}")
-            return normalize(self, x, y)    
+    def neighbour(self, thing): # TODO: Change that to return some direction randomly
+            x = thing.x 
+            y = thing.y 
+            directions = ["N", "E", "S", "W"]
+            random.shuffle(directions)
+            for direction in directions:
+                match direction:
+                    case "N":
+                        y += 1
+                    case "S":
+                        y -= 1
+                    case "E":
+                        x += 1
+                    case "W":
+                        x -= 1 
+
+                if not inbound(self, x, y):
+                    coords = normalize(self, x, y)
+                    x = coords[0]
+                    y = coords[1]
+        
+                if self.map[ctod(x, y)] == None: # If this throws an error fix inbound or normalize
+                    return[x, y]
+                
+            return[]    
+            
+            
     
     def computeLifeCycle(self):
         things = self.things
-        while(len(self.things) > 0):
+        while(len(self.things) > 0): # TODO: s.u.
             rand_x = random.randint(0, self.max_x) # If i actually implement this i have to fix this
             rand_y = random.randint(0, self.max_y) # Holy shit this would be such bad runtime
             coords = ctod(rand_x, rand_y) # fuck it mach ich später
@@ -84,7 +94,12 @@ class World:
 
 
 def TryDieGeliebteImBeischlafVerführen(thing, x, y):
+    #TODO: Find a free neighbour, randomly
+    #TODO: Spawn a rat at the returned postion
+    # Wie reproduzieren die sich eigentlich asexuell
     pass
+    
+    
 
 def ctod(x, y):
     return "{},{}".format(x, y)
@@ -174,7 +189,7 @@ class Plant(Thing):
         super().__init__(
             symbol = symbol
         )
-        self.seedCycle = seedCycly
+        self.seedCycle = seedCycle
 
 
 map = World(20, 20)
