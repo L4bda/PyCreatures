@@ -1,6 +1,6 @@
-offspringCycle = 3
-maxStarving = 100
-maxAge = 101
+offspringCycle = 5
+maxStarving = 11
+maxAge = 15
 mouse = 'M'
 corn = 'C'
 
@@ -48,7 +48,6 @@ class World:
                     print(self.map[x][y])
 
     def spawn(self, thing):
-        print(thing.x, thing.y)
         if not inbound(self, thing.x, thing.y):
             coordinates = normalize(self, thing.x, thing.y)
             #print(f"x,y oob: {x} {y}")
@@ -206,7 +205,6 @@ class Creature(Thing):
         self.currentCycle = 0
         self.dead = False
     def call(self):
-        self.offspringCycle += 1
         self.age += 1
         self.starving += 1
         self.currentCycle += 1
@@ -216,11 +214,10 @@ class Creature(Thing):
             map.kill(self)
         elif self.starving == self.maxStarving:
             self.dead = True
-            map.kill(self) # This should kill it
-        # elif not self.dead and self.currentCycle == self.offspringCycle:
-        TryDieGeliebteImBeischlafVerführen(self, self.x, self.y)
-        self.currentCycle = 0
-        print("fucked")
+            map.kill(self) 
+        if not self.dead and self.currentCycle >= self.offspringCycle: 
+            TryDieGeliebteImBeischlafVerführen(self, self.x, self.y)
+            self.currentCycle = 0
 
         # Move
         if not self.dead:
@@ -270,7 +267,6 @@ def mainLoop(map):
                                     n = 0
                                     continue
                                 for _ in range(n):
-                                    print("Mouse spawned")
                                     c = map.randomFreeCoordinates()
                                     mouse = Creature('M', c.x, c.y)
                                     map.spawn(mouse)
