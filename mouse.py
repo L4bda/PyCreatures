@@ -225,9 +225,12 @@ class Creature(Thing):
         # Move
         if not self.dead:
             new_field = map.neighbour(self)
-            map.replace(self, new_field)
-            self.x = new_field.x 
-            self.y = new_field.y          
+            if new_field.valid:
+                map.replace(self, new_field)
+                self.x = new_field.x 
+                self.y = new_field.y 
+            else:
+                pass
 class Plant(Thing):
     def __init__(symbol, seedCycle):
         super().__init__(
