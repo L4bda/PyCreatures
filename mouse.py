@@ -1,8 +1,17 @@
-offspringCycle = 4
-maxStarving = 3
-maxStarving = 10
+offspringCycle = 3
+maxStarving = 100
+maxAge = 101
 mouse = 'M'
 corn = 'C'
+
+class Coordinates:
+    def __init__(self, x, y, valid):
+        if valid:
+            self.x = x 
+            self.y = y
+            self.valid = True
+        else:
+            self.valid = False
 import random
 class World:
     def __init__(self, width, height):
@@ -43,8 +52,8 @@ class World:
         if not inbound(self, thing.x, thing.y):
             coordinates = normalize(self, thing.x, thing.y)
             #print(f"x,y oob: {x} {y}")
-            x = coordinates[0]
-            y = coordinates[1]
+            x = coords.x
+            y = coords.y
         else:
             x = thing.x 
             y = thing.y 
@@ -70,18 +79,33 @@ class World:
 
                 if not inbound(self, x, y):
                     coords = normalize(self, x, y)
-                    x = coords[0]
-                    y = coords[1]
+                    x = coords.x
+                    y = coords.y
         
-                if self.map[ctod(x, y)] == None: # If this throws an error fix inbound or normalize
-                    return[x, y]
-            return[]    
+                if self.things[ctod(x, y)] == None: # If this throws an error fix inbound or normalize
+                    return Coordinates(x,y, True)
+            return Coordinates(None, None, False)
             
     def kill(self, thing): #TODO: Kill the children of Thing
         x = thing.x 
         y = thing.y 
         self.map[x][y] = None
         self.things[ctod(x, y)] = None
+    
+    def randomFreeCoordinates(self):
+        things = list(self.things.items())
+        random.shuffle(things)
+        for k, v in things:
+            if v == None:
+                return dtoc(k)
+        print("Map is full")
+        exit()
+    def replace(self, old, new):
+        thing = self.things[ctod(old.x, old.y)]
+        self.things[ctod(old.x, old.y)] = None
+        self.things[ctod(new.x, new.y)] = thing
+        self.map[old.x][old.y] = None
+        self.map[new.x][new.y] = self.things[ctod(new.x, new.y)].symbol 
 
     
     def computeLifeCycle(self):
@@ -90,6 +114,7 @@ class World:
         for v in things:
             if v != None:
                 v.call()
+        self.out()
 
 
 
@@ -97,9 +122,10 @@ def TryDieGeliebteImBeischlafVerführen(thing, x, y):
     #TODO: Find a free neighbour, randomly
     #TODO: Spawn a rat at the returned postion
     # Wie reproduzieren die sich eigentlich asexuell
-    
-    if len(neighbour(map, thing)) > 0: # Map hier vlt. in die Funktion einfügen, aber runtime ist eh schon aus dem Fenster geflogen
-        map.spawn(Creature(mouse, offspringCycle, maxStarving, maxAge, x, y))
+    c = map.neighbour(thing)
+
+    if c.valid: # Map hier vlt. in die Funktion einfügen, aber runtime ist eh schon aus dem Fenster geflogen
+        map.spawn(Creature(mouse, c.x, c.y))
 
 
     
@@ -108,7 +134,9 @@ def TryDieGeliebteImBeischlafVerführen(thing, x, y):
 def ctod(x, y):
     return "{},{}".format(x, y)
 def dtoc(xy):
-    return[xy[0], xy[1]]
+    
+    xy = xy.split(",")
+    return Coordinates(int(xy[0]), int(xy[1]), True)
 def normalize(map, x, y): # ts still fucked
     if map.max_x == 0:
         x = 0
@@ -141,7 +169,7 @@ def normalize(map, x, y): # ts still fucked
             except ZeroDivisionError:
                 y = 0
     # print(f"Y after fuck {y}")
-    return [x, y]
+    return Coordinates(x, y, True)
 
 def inbound(map, x,y):
     if x < 0:
@@ -165,7 +193,7 @@ class Thing:
         pass
 
 class Creature(Thing):
-    def __init__(self, symbol, offspringCycle, maxStarving, maxAge, x, y):
+    def __init__(self, symbol, x, y):
         super().__init__(
             symbol = symbol,
             x = x,
@@ -176,18 +204,30 @@ class Creature(Thing):
         self.maxStarving = maxStarving
         self.maxAge = maxAge
         self.currentCycle = 0
+        self.dead = False
     def call(self):
         self.offspringCycle += 1
         self.age += 1
         self.starving += 1
         self.currentCycle += 1
-        if self.starving == self.maxStarving:
-            self.age = self.maxAge # This should kill it
+
         if self.age == self.maxAge:
+            self.dead = True
             map.kill(self)
-        if self.offspringCycle == self.currentCycle:
-            TryDieGeliebteImBeischlafVerführen(self)
-          
+        elif self.starving == self.maxStarving:
+            self.dead = True
+            map.kill(self) # This should kill it
+        # elif not self.dead and self.currentCycle == self.offspringCycle:
+        TryDieGeliebteImBeischlafVerführen(self, self.x, self.y)
+        self.currentCycle = 0
+        print("fucked")
+
+        # Move
+        if not self.dead:
+            new_field = map.neighbour(self)
+            map.replace(self, new_field)
+            self.x = new_field.x 
+            self.y = new_field.y          
 class Plant(Thing):
     def __init__(symbol, seedCycle):
         super().__init__(
@@ -198,23 +238,54 @@ class Plant(Thing):
         self.seedCycle += 1
 
 map = World(79, 29)
+
 def mainLoop(map):
-    map.out()
     while True:
-        command = input("Enter command: ")
-        if len(command) == 0:
-            break
-        elif len(command) == 1:
-            match command:
-                case "h":
-                    print("Lorem ipsum in dolor sit amet")
-                    break
-                case "q":
-                    exit()
-        elif len(command) > 5:
-            if command[:5] == "spawn":
-                pass #TODO: Create random coordinate generator, match pattern for spawn <type> <number>
+        map.out()
+        while True:
+            command = input("Enter command: ")
+            if len(command) == 0:
+                map.computeLifeCycle()
+                continue
+            elif len(command) == 1:
+                match command:
+                    case "h":
+                        print("Lorem ipsum in dolor sit amet")
+                        break
+                    case "q":
+                        exit()
+            command = command.split()
+            match command[0]:
+                case "spawn":
+                        if len(command) != 3:
+                            continue
+                        match command[1]: 
+                            case "mouse":
+                                try:
+                                    n = int(command[2])
+                                except:
+                                    n = 0
+                                    continue
+                                for _ in range(n):
+                                    print("Mouse spawned")
+                                    c = map.randomFreeCoordinates()
+                                    mouse = Creature('M', c.x, c.y)
+                                    map.spawn(mouse)
+                case "debug":
+                    print(map.things)
+                    print("-"*50)
+                    print(map.map)
+                    print("-"*50)
+                    map.out()
+                case _:
+                    try:
+                        n = int(command[0])
+                    except:
+                        continue
+                    for _ in range(n):
+                        map.computeLifeCycle()
+                        
 
+mainLoop(map)
 
-
-
+    
