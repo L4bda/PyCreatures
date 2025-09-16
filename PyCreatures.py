@@ -1,5 +1,9 @@
 import random
-
+class Ansi:
+    YELLOW = "\033[33m"
+    PINK = "\033[95m"
+    GREEN = "\033[32m"
+    RESET = "\033[0m"
 class CornConfig:
     seedCycle = 6
     cornSymbol = '§'
@@ -42,11 +46,13 @@ class World:
         for y in reversed(range(self.max_y)):
             for x in range(self.max_x):
                 if self.map[x][y] is None:
-                    print(".", end="")
-                else:
-                    print(self.map[x][y], end="")
+                    print(f"{Ansi.GREEN}.{Ansi.RESET}", end="")
+                elif self.map[x][y] == CornConfig.cornSymbol:
+                    print(f"{Ansi.YELLOW}{CornConfig.cornSymbol}{Ansi.RESET}", end="")
+                elif self.map[x][y] == MouseConfig.mouseSymbol:
+                    print(f"{Ansi.PINK}{MouseConfig.mouseSymbol}{Ansi.RESET}", end="")
+
             print()
-        print()
 
     def get(self, x, y): # Same as out(), but for a single coordinate. Only used for debug purposes
         c = normalize(self, x, y)
@@ -282,7 +288,6 @@ def initWorld() -> World: # Creates and returns World
 
 def mainLoop(map):
     while True:
-        map.out()
         command = input("Enter command <'h' for help, <Enter> for next cycle>: ")
         if len(command) == 0:
             map.computeLifeCycle()
@@ -323,6 +328,8 @@ def mainLoop(map):
                                 c = map.randomFreeCoordinates()
                                 mouse = Creature(MouseConfig.mouseSymbol, c.x, c.y)
                                 map.spawn(mouse)
+                                map.out() # Indent this to make a "radiactive distortion" effect when spawning
+
                         case "corn":
                             try:
                                 n = int(command[1])
@@ -333,6 +340,9 @@ def mainLoop(map):
                                 c = map.randomFreeCoordinates()
                                 corn = Plant(CornConfig.cornSymbol, c.x, c.y)
                                 map.spawn(corn)
+                                map.out() # Indent this to make a "radiactive distortion" effect when spawning
+
+
                         case _:
                             print(f"{command[2]} is not implemented. Press h for help")
             case "debug":
@@ -349,5 +359,6 @@ def mainLoop(map):
                     continue
                 for _ in range(n):
                     map.computeLifeCycle()
+
 map = initWorld()
 mainLoop(map)
