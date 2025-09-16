@@ -1,6 +1,3 @@
-
-
-
 class CornConfig:
     seedCycle = 6
     cornSymbol = 'C'
