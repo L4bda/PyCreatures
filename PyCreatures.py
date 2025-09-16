@@ -19,12 +19,9 @@ class MouseConfig:
 
 class Coordinates:
     def __init__(self, x, y, valid):
-        if valid:
-            self.x = x 
-            self.y = y
-            self.valid = True
-        else:
-            self.valid = False
+        self.x = x 
+        self.y = y
+        self.valid = valid
 
 class World:
     def __init__(self, width, height):
@@ -65,10 +62,6 @@ class World:
                 print(self.map[c.x][c.y])
         
     def spawn(self, thing): # Adds a Thing to the map and dictionary
-        #  Unnecessary Boilerplate
-            # coords = normalize(self, thing.x, thing.y) 
-            # x = coords.x
-            # y = coords.y
         self.map[thing.x][thing.y] = thing.symbol
         self.things[ctod(thing.x, thing.y)] = thing
     
@@ -182,6 +175,7 @@ def dtoc(xy): # A map.things key to a coordinate
 
 def normalize(map, x, y): # Sets the coordinates to be wrapped around the plane
 # Normalize X coordinate
+    
     if map.max_x == 0:
         x = 0
     else:
@@ -365,4 +359,5 @@ def mainLoop(map):
 
 map = initWorld()
 mainLoop(map)
+
 
