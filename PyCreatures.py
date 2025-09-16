@@ -4,16 +4,19 @@ class Ansi:
     PINK = "\033[95m"
     GREEN = "\033[32m"
     RESET = "\033[0m"
+
 class CornConfig:
     seedCycle = 6
     cornSymbol = '§'
     maxAge = 25
+
 class MouseConfig:
     maxStarving = 7
     maxAge = 25
     offspringCycle = 12
     mouseSymbol = "M"
     eatable = [CornConfig.cornSymbol] # Maybe imoprt classes to fix undefined class error when added in wrong order or change fully if two fighting classes should be added
+
 class Coordinates:
     def __init__(self, x, y, valid):
         if valid:
@@ -22,7 +25,7 @@ class Coordinates:
             self.valid = True
         else:
             self.valid = False
-import random
+
 class World:
     def __init__(self, width, height):
         # 2D array
@@ -362,3 +365,4 @@ def mainLoop(map):
 
 map = initWorld()
 mainLoop(map)
+
