@@ -1,13 +1,16 @@
-offspringCycle = 5 # Make thid a config class
-maxStarving = 11
-maxAge = 15
-mouse = 'M'
-corn = 'C'
-class config:
-    maxStarving = 11
-    maxAge = 15
+
+
+
+class CornConfig:
+    seedCycle = 4
+    cornSymbol = 'C'
+
+class MouseConfig:
+    maxStarving = 5000
+    maxAge = 5000
+    offspringCycle = 1
     mouseSymbol = "M"
-    cornSymbol = "C"
+    eatable = [CornConfig.cornSymbol] # Maybe imoprt classes to fix undefined class error when added in wrong order or change fully if two fighting classes should be added
 
 class Coordinates:
     def __init__(self, x, y, valid):
@@ -44,6 +47,7 @@ class World:
                 else:
                     print(self.map[x][y], end="")
             print()
+        print()
 
     def get(self, x, y):
         if inbound(self, x, y):
@@ -65,7 +69,7 @@ class World:
         self.things[ctod(x, y)] = thing
 
                 
-    def neighbour(self, thing): # TODO: Change that to return some direction randomly
+    def freeNeighbour(self, thing): # TODO: Change that to return some direction randomly
             x = thing.x 
             y = thing.y 
             directions = ["N", "E", "S", "W"]
@@ -89,7 +93,30 @@ class World:
                 if self.things[ctod(x, y)] == None: # If this throws an error fix inbound or normalize
                     return Coordinates(x,y, True)
             return Coordinates(None, None, False)
-            
+
+    def foodNearMe(self, thing):
+        x = thing.x 
+        y = thing.y 
+        directions = ["N", "E", "S", "W"]
+        random.shuffle(directions)
+        for direction in directions:
+            match direction:
+                case "N":
+                    y += 1
+                case "S":
+                    y -= 1
+                case "E":
+                    x += 1
+                case "W":
+                    x -= 1 
+            if not inbound(self, x, y):
+                coords = normalize(self, x, y)
+                x = coords.x
+                y = coords.y
+    
+            if self.things[ctod(x, y)] in thing.eatable: # If this throws an error fix inbound or normalize
+                return Coordinates(x,y, True)
+        return Coordinates(None, None, False)
     def kill(self, thing): #TODO: Kill the children of Thing
         x = thing.x 
         y = thing.y 
@@ -122,16 +149,22 @@ class World:
 
 
 
-def TryDieGeliebteImBeischlafVerführen(thing, x, y): #TODO: Lowercase for idiomacy
-    #TODO: Find a free neighbour, randomly
+def tryDieGeliebteImBeischlafVerführen(thing): #TODO: Lowercase for idiomacy
+    #TODO: Find a free freeNeighbour, randomly
     #TODO: Spawn a rat at the returned postion
     # Wie reproduzieren die sich eigentlich asexuell
-    c = map.neighbour(thing)
-
+    c = map.freeNeighbour(thing)
     if c.valid: # Map hier vlt. in die Funktion einfügen, aber runtime ist eh schon aus dem Fenster geflogen
-        map.spawn(Creature(thing.symbol, c.x, c.y)) #TODO: Creature hier durch wahre klasse ersetzen 
-
-
+        match type(thing).__name__:
+            case "Creature":
+                map.spawn(Creature(thing.symbol, c.x, c.y)) #TODO: Creature hier durch wahre klasse ersetzen 
+            case "Plant":
+                print("corn spawned")
+                map.spawn(Plant(thing.symbol, c.x, c.y))
+            case _:
+                raise Exception("Non class called")
+    else:
+        print("No valid spawnpoint")
     
     
 
@@ -193,6 +226,7 @@ class Thing:
         self.age = 0
         self.x = x 
         self.y = y
+        self.age = 0
     def performAction():
         pass
 
@@ -202,13 +236,15 @@ class Creature(Thing):
             symbol = symbol,
             x = x,
             y = y,
+    
         )
-        self.offspringCycle = offspringCycle
+        self.offspringCycle = MouseConfig.offspringCycle
         self.starving = 0
-        self.maxStarving = maxStarving
-        self.maxAge = maxAge
+        self.maxStarving = MouseConfig.maxStarving
+        self.maxAge = MouseConfig.maxAge
         self.currentCycle = 0
         self.dead = False
+        self.eatable = MouseConfig.eatable
     def call(self):
         self.age += 1
         self.starving += 1
@@ -221,26 +257,37 @@ class Creature(Thing):
             self.dead = True
             map.kill(self) 
         if not self.dead and self.currentCycle >= self.offspringCycle: 
-            TryDieGeliebteImBeischlafVerführen(self, self.x, self.y)
+            tryDieGeliebteImBeischlafVerführen(self)
             self.currentCycle = 0
-
+        
         # Move
         if not self.dead:
-            new_field = map.neighbour(self)
+            new_field = map.foodNearMe(self)
+            if not new_field.valid:
+                new_field = map.freeNeighbour(self)
             if new_field.valid:
                 map.replace(self, new_field)
                 self.x = new_field.x 
                 self.y = new_field.y 
             else:
-                pass
+                pass # Useless btw
 class Plant(Thing):
-    def __init__(symbol, seedCycle):
+    def __init__(self, symbol, x, y):
         super().__init__(
-            symbol = symbol
+            symbol = symbol,
+            x = x,
+            y = y,
         )
-        self.seedCycle = seedCycle
+        self.age += 1
+        self.currentCycle = 0
+        self.seedCycle = CornConfig.seedCycle
+ 
+        
     def call(self):
-        self.seedCycle += 1
+        print("corn called")
+        self.currentCycle += 1
+        if self.currentCycle >= CornConfig.seedCycle:
+            tryDieGeliebteImBeischlafVerführen(self)
 
 map = World(79, 29)
 
@@ -273,8 +320,18 @@ def mainLoop(map):
                                     continue
                                 for _ in range(n):
                                     c = map.randomFreeCoordinates()
-                                    mouse = Creature('M', c.x, c.y)
+                                    mouse = Creature(MouseConfig.mouseSymbol, c.x, c.y)
                                     map.spawn(mouse)
+                            case "corn":
+                                try:
+                                    n = int(command[2])
+                                except:
+                                    n = 0
+                                    continue
+                                for _ in range(n):
+                                    c = map.randomFreeCoordinates()
+                                    corn = Plant(CornConfig.cornSymbol, c.x, c.y)
+                                    map.spawn(corn)
                 case "debug":
                     print(map.things)
                     print("-"*50)
