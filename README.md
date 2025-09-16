@@ -1,2 +1,2 @@
 ### Purpose
-Implement PyCreatures from the given PDF
+Implements PyCreatures from the given PDF
