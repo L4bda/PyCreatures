@@ -1,8 +1,13 @@
-offspringCycle = 5
+offspringCycle = 5 # Make thid a config class
 maxStarving = 11
 maxAge = 15
 mouse = 'M'
 corn = 'C'
+class config:
+    maxStarving = 11
+    maxAge = 15
+    mouseSymbol = "M"
+    cornSymbol = "C"
 
 class Coordinates:
     def __init__(self, x, y, valid):
@@ -117,14 +122,14 @@ class World:
 
 
 
-def TryDieGeliebteImBeischlafVerführen(thing, x, y):
+def TryDieGeliebteImBeischlafVerführen(thing, x, y): #TODO: Lowercase for idiomacy
     #TODO: Find a free neighbour, randomly
     #TODO: Spawn a rat at the returned postion
     # Wie reproduzieren die sich eigentlich asexuell
     c = map.neighbour(thing)
 
     if c.valid: # Map hier vlt. in die Funktion einfügen, aber runtime ist eh schon aus dem Fenster geflogen
-        map.spawn(Creature(mouse, c.x, c.y))
+        map.spawn(Creature(thing.symbol, c.x, c.y)) #TODO: Creature hier durch wahre klasse ersetzen 
 
 
     
