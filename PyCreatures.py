@@ -14,12 +14,9 @@ class MouseConfig:
 
 class Coordinates:
     def __init__(self, x, y, valid):
-        if valid:
-            self.x = x 
-            self.y = y
-            self.valid = True
-        else:
-            self.valid = False
+        self.x = x 
+        self.y = y
+        self.valid = valid
 class World:
     def __init__(self, width, height):
         # 2D array
@@ -33,11 +30,12 @@ class World:
                 a.append(None)
                 self.things[ctod(x, y)] = None
             self.map.append(a)
-        self.max_y = len(self.map[0])
         try:
-            self.max_x = len(self.map)
+            self.max_y = len(self.map[0])
         except IndexError:
-            self.max_x = 0
+            self.max_y = 0  
+        self.max_x = len(self.map)
+        
 
     def out(self): # Prints the map as a x*y grid, where None will be printed as '.'
         for y in reversed(range(self.max_y)):
@@ -57,10 +55,6 @@ class World:
                 print(self.map[c.x][c.y])
         
     def spawn(self, thing): # Adds a Thing to the map and dictionary
-        #  Unnecessary Boilerplate
-            # coords = normalize(self, thing.x, thing.y) 
-            # x = coords.x
-            # y = coords.y
         self.map[thing.x][thing.y] = thing.symbol
         self.things[ctod(thing.x, thing.y)] = thing
     
@@ -88,6 +82,7 @@ class World:
             return Coordinates(None, None, False)
 
     def foodNearMe(self, thing): # Same as freeNeighbour() but for food
+                                 # Maybe add both into one function 
         x = thing.x 
         y = thing.y 
         directions = ["N", "E", "S", "W"]
@@ -129,17 +124,17 @@ class World:
         for k, v in things:
             if v == None:
                 return dtoc(k)
-        raise Exception ("Can not spawn more Things then Spaces on the map ({self.max_x} * {self.max_y} - (amount of things))")
+        raise Exception ("Can not spawn more Things then Spaces on the map ({self.max_x} * {self.max_y} - (amount of things) = 0)")
 
     def replace(self, old, new): # Replaces two Things or one Thing and one None in the map and dict. Used for movement and eating
         thing = self.things[ctod(old.x, old.y)]
         self.things[ctod(old.x, old.y)] = None
         self.things[ctod(new.x, new.y)] = thing
         self.map[old.x][old.y] = None
-        self.map[new.x][new.y] = self.things[ctod(new.x, new.y)].symbol 
+        self.map[new.x][new.y] = thing.symbol 
     
     
-    def computeLifeCycle(self): # Iterates over all Things, let's them perform their actions
+    def computeLifeCycle(self): # Iterates over all Things in random order, let's them perform their actions
         things = self.things.values()
         random.shuffle(list(things))
         for v in things:
@@ -147,7 +142,7 @@ class World:
                 v.call(map)
         self.out()
 
-def tryDieGeliebteBeimBeischlafVerführen(thing, map): # Handles reproduction # Reference  
+def tryDieGeliebteBeimBeischlafVerführen(thing, map): # Handles reproduction
     # Wie reproduzieren die sich eigentlich asexuell
     match type(thing).__name__:
         case "Creature":
@@ -174,6 +169,7 @@ def dtoc(xy): # A map.things key to a coordinate
 
 def normalize(map, x, y): # Sets the coordinates to be wrapped around the plane
 # Normalize X coordinate
+# Auch als funktion [norm(coordinate : x||y, max: map.max_x || map.max_y)] besser, aber unnötig
     if map.max_x == 0:
         x = 0
     else:
@@ -352,4 +348,5 @@ def mainLoop(map):
                     map.computeLifeCycle()
 map = initWorld()
 mainLoop(map)
+
 
