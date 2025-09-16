@@ -2,13 +2,14 @@
 
 
 class CornConfig:
-    seedCycle = 4
+    seedCycle = 6
     cornSymbol = 'C'
+    maxAge = 25
 
 class MouseConfig:
-    maxStarving = 5000
-    maxAge = 5000
-    offspringCycle = 1
+    maxStarving = 7
+    maxAge = 25
+    offspringCycle = 12
     mouseSymbol = "M"
     eatable = [CornConfig.cornSymbol] # Maybe imoprt classes to fix undefined class error when added in wrong order or change fully if two fighting classes should be added
 
@@ -69,7 +70,7 @@ class World:
         self.things[ctod(x, y)] = thing
 
                 
-    def freeNeighbour(self, thing): # TODO: Change that to return some direction randomly
+    def freeNeighbour(self, thing):
             x = thing.x 
             y = thing.y 
             directions = ["N", "E", "S", "W"]
@@ -113,11 +114,11 @@ class World:
                 coords = normalize(self, x, y)
                 x = coords.x
                 y = coords.y
-    
-            if self.things[ctod(x, y)] in thing.eatable: # If this throws an error fix inbound or normalize
-                return Coordinates(x,y, True)
+            if self.things[ctod(x, y)] != None:
+                if self.things[ctod(x, y)].symbol in thing.eatable: # If this throws an error fix inbound or normalize
+                    return Coordinates(x,y, True)
         return Coordinates(None, None, False)
-    def kill(self, thing): #TODO: Kill the children of Thing
+    def kill(self, thing):
         x = thing.x 
         y = thing.y 
         self.map[x][y] = None
@@ -149,24 +150,28 @@ class World:
 
 
 
-def tryDieGeliebteImBeischlafVerführen(thing): #TODO: Lowercase for idiomacy
-    #TODO: Find a free freeNeighbour, randomly
-    #TODO: Spawn a rat at the returned postion
+def tryDieGeliebteImBeischlafVerführen(thing):
     # Wie reproduzieren die sich eigentlich asexuell
-    c = map.freeNeighbour(thing)
-    if c.valid: # Map hier vlt. in die Funktion einfügen, aber runtime ist eh schon aus dem Fenster geflogen
-        match type(thing).__name__:
-            case "Creature":
-                map.spawn(Creature(thing.symbol, c.x, c.y)) #TODO: Creature hier durch wahre klasse ersetzen 
-            case "Plant":
-                print("corn spawned")
+    match type(thing).__name__:
+        case "Creature":
+            c = map.freeNeighbour(thing)
+            if c.valid:
+                map.spawn(Creature(thing.symbol, c.x, c.y))
+                print(type(thing).__name__)
+                return
+            c = map.foodNearMe(thing)
+            if c.valid:
+                map.spawn(Creature(thing.symbol, c.x, c.y))
+                print(f"Food {type(thing).__name__}")
+                return
+        case "Plant":
+            c = map.freeNeighbour(thing)
+            if c.valid:
                 map.spawn(Plant(thing.symbol, c.x, c.y))
-            case _:
-                raise Exception("Non class called")
-    else:
-        print("No valid spawnpoint")
-    
-    
+                print(f"Free {type(thing).__name__}")
+                return
+        case _:
+            raise Exception("Non class called") 
 
 def ctod(x, y):
     return "{},{}".format(x, y)
@@ -236,7 +241,6 @@ class Creature(Thing):
             symbol = symbol,
             x = x,
             y = y,
-    
         )
         self.offspringCycle = MouseConfig.offspringCycle
         self.starving = 0
@@ -249,22 +253,24 @@ class Creature(Thing):
         self.age += 1
         self.starving += 1
         self.currentCycle += 1
-
-        if self.age == self.maxAge:
-            self.dead = True
-            map.kill(self)
-        elif self.starving == self.maxStarving:
-            self.dead = True
-            map.kill(self) 
+        
         if not self.dead and self.currentCycle >= self.offspringCycle: 
             tryDieGeliebteImBeischlafVerführen(self)
             self.currentCycle = 0
-        
+
+        if self.age >= self.maxAge:
+            self.dead = True
+            map.kill(self)
+        elif self.starving > self.maxStarving:
+            self.dead = True
+            map.kill(self)         
         # Move
         if not self.dead:
             new_field = map.foodNearMe(self)
             if not new_field.valid:
                 new_field = map.freeNeighbour(self)
+            else:
+                self.starving = 0
             if new_field.valid:
                 map.replace(self, new_field)
                 self.x = new_field.x 
@@ -284,12 +290,13 @@ class Plant(Thing):
  
         
     def call(self):
-        print("corn called")
         self.currentCycle += 1
         if self.currentCycle >= CornConfig.seedCycle:
             tryDieGeliebteImBeischlafVerführen(self)
+        if self.age >= CornConfig.maxAge:
+            map.kill(self)
 
-map = World(79, 29)
+map = World(79, 24)
 
 def mainLoop(map):
     while True:
